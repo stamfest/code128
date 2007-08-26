@@ -1,0 +1,284 @@
+#!/usr/bin/perl
+
+use strict;
+use utf8;
+use POSIX;
+
+
+
+
+=pod
+
+Total symbol:  <START>DATA<check-sum><END>
+
+1 Character -> 3 bars / 3 spaces. Total of 11 bar-widths.
+
+For code A and B:
+
+Symbol length for N chars in bars:
+
+l = 11 * N + 35
+
+Minimum bar-width is 7.5mil
+
+1 mil = 1/1000 inch
+
+lb = 7.5mil
+
+Total absolute symbol length thus:
+
+L = l * lb
+
+Minimum symbol height: the larger of 0.25in or 15% of total symbol length:
+
+H = max(0.25in, 0.15*L)
+
+
+Note: 
+
+1pt = 1/72 in
+
+=cut
+
+sub max {
+    my $a = shift;
+    my $b = shift;
+    return $a > $b ? $a : $b;
+}
+
+
+# in mils (1 mil  = 1/1000 inch)
+my $lb = 7.5;
+
+my $H = 250;
+
+my $extchars = '³²°üöä¹ÄÖÜ§';
+
+# parse commandline
+
+while ($ARGV[0] ne "") {
+    my $arg = shift;
+    if ($arg eq '--maxchars') {
+	my $maxchars = shift;
+
+	my $l = 11 * $maxchars + 35;
+	my $L = $l * $lb;
+	
+	$H = max(250, 0.15 * $L);   # in mil
+	
+    } elsif ($arg eq '--barwidth') {
+	$lb = shift;
+    } elsif ($arg eq '--fontsize') {
+	$H = shift;
+	if ($H =~ m/(.*)pt$/) {
+	    $H = $1 * 1000.0 / 72.0;   # turn points into mils
+	} elsif ($H =~ m/(.*)mm$/) {
+	    $H = $1 / 0.0254;   # turn mm into mils
+	} else {
+	    $H *= 1000 / 72;   # turn points into mils
+	}
+
+    } elsif ($arg eq '--extchars') {
+	$extchars = shift;
+    } else {
+	die "unknown command-line argument: $arg\n";
+    }
+}
+
+my $pt = ($H / 1000.0 / (1 / 72.0));
+
+# round up
+$pt = POSIX::ceil($pt); 
+my $Hpt = $pt / 72 * 1000;  # in mil
+
+# $H = $pt / 72 * 1000;
+
+print STDERR "Use font at size ${pt}pt\n";
+
+my $unitsem = 1000.0;
+### unitsem  ~  $pt (rounded up)
+### barheight = 
+
+
+
+my $barwidth = ($unitsem / $H) * $lb;
+
+my $barheight  = $unitsem / $Hpt * $H;
+
+
+#$unitsem / $ratio / 11.0;
+
+#		BSBSBS
+
+my @codeset = qw(
+		212222
+		222122
+		222221
+		121223
+		121322
+		131222
+		122213
+		122312
+		132212
+		221213
+		221312
+		231212
+		112232
+		122132
+		122231
+		113222
+		123122
+		123221
+		223211
+		221132
+		221231
+		213212
+		223112
+		312131
+		311222
+		321122
+		321221
+		312212
+		322112
+		322211
+		212123
+		212321
+		232121
+		111323
+		131123
+		131321
+		112313
+		132113
+		132311
+		211313
+		231113
+		231311
+		112133
+		112331
+		132131
+		113123
+		113321
+		133121
+		313121
+		211331
+		231131
+		213113
+		213311
+		213131
+		311123
+		311321
+		331121
+		312113
+		312311
+		332111
+		314111
+		221411
+		431111
+		111224
+		111422
+		121124
+		121421
+		141122
+		141221
+		112214
+		112412
+		122114
+		122411
+		142112
+		142211
+		241211
+		221114
+		413111
+		241112
+		134111
+		111242
+		121142
+		121241
+		114212
+		124112
+		124211
+		411212
+		421112
+		421211
+		212141
+		214121
+		412121
+		111143
+		111341
+		131141
+		114113
+		114311
+		411113
+		411311
+		113141
+		114131
+		311141
+		411131
+		211412
+		211214
+		211232
+		2331112
+			);
+
+
+my $horizadvx = int(11.0 * $barwidth);
+
+print <<EOF;
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd" >
+<svg>
+  <defs>
+    <font horiz-adv-x="$horizadvx" >
+      <font-face
+	font-family="Code128"
+	units-per-em="$unitsem"
+	alphabetic="0" 
+	horiz-adv-x="$horizadvx"
+       />
+      <missing-glyph horiz-adv-x="$horizadvx" />
+EOF
+
+my $i = 0;
+foreach my $c (@codeset) {
+    my @f = split //, $c;
+    my $s = 0;
+    
+    my $d = "";
+    my $j = 0;
+    foreach my $b (@f) {
+	if ($j % 2 == 0) {
+	    my $x1 = $s * $barwidth;
+	    my $wi = $b * $barwidth;
+	    my $x2 = ($s + $b) * $barwidth;
+	    # BAR
+	    $d .= "M$x1 0h${wi}v${barheight}h-${wi}v-${barheight}z";
+	}
+	$s += $b;
+	$j++;
+    }
+
+    my $code = 32 + $i;
+    
+    my $xml = sprintf "      <glyph unicode='&#%d;' horiz-adv-x='%g' d='%s'/>\n", $code, int($s * $barwidth), $d;
+    print "$xml";
+
+    if ($i >= 96) {
+	my $x = substr($extchars, $i - 96, 1);
+	if ($x ne "") {
+	    my $xx = ord($x);
+	    die "duplicated character due to extension character $x\n" if ($xx < 128);
+	    $xml = sprintf "      <glyph unicode='&#%d;' horiz-adv-x='%g' d='%s'/>\n", ord($x), int($s * $barwidth), $d;
+	    print "$xml";
+	}
+    }
+
+
+    $i++;
+}
+
+print <<EOF;
+    </font>
+  </defs>
+</svg>
+EOF
+

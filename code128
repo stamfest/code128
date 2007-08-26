@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $t = shift;
+
+# use code b
+
+my $i = 1;
+my $d = chr(104 + 32);
+my $s = 104;
+
+
+foreach my $c (split //, $t) {
+    $d .= $c;
+    my $n = ord($c) - 32;
+    $s += $n * $i;
+
+    print "$n ";
+
+    $i++;
+}
+
+print "\n$s\n";
+
+$s %= 103;
+
+print "\n$s\n";
+
+$d .= chr($s + 32);
+
+print "$d";
