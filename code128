@@ -1,8 +1,14 @@
 #!/usr/bin/perl
 
 use strict;
+use utf8;
+use open OUT => ':locale'; 
 
 my $t = shift;
+
+my $extchars = shift || '³²°üöä¹ÄÖÜ§';
+
+open STDOUT, ">&1";
 
 # use code b
 
@@ -16,17 +22,26 @@ foreach my $c (split //, $t) {
     my $n = ord($c) - 32;
     $s += $n * $i;
 
-    print "$n ";
+#    print "$n ";
 
     $i++;
 }
 
-print "\n$s\n";
-
 $s %= 103;
-
-print "\n$s\n";
-
 $d .= chr($s + 32);
+$d .= chr(106 + 32);
 
-print "$d";
+my $d2 = "";
+
+foreach my $c2 (split //, $d) {
+    my $o = ord($c2);
+    if ($o >= 128) {
+	$d2 .= substr($extchars, $o - 128, 1);
+    } else {
+	$d2 .= $c2;
+    }
+}
+
+
+utf8::upgrade($d2);
+print "$d2\n";
