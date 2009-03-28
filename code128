@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+# written by peter stamfest <peter@stamfest.at>
+#
+# this file is in the public domain
 
 use strict;
 use utf8;

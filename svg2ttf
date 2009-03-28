@@ -1,0 +1,5 @@
+#!/usr/bin/fontforge  -nosplash
+import fontforge
+import sys
+f = fontforge.open(sys.argv[1])
+f.generate(sys.argv[2])
