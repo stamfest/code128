@@ -1,0 +1,19 @@
+Use
+
+ ./code128-font --fontsize 12pt > code128-12.svg
+
+to produce an svg font. By default, it maps some printable unicode characters
+to the code 128 control chars, so codes can be printed from text-processing
+tools. 
+
+Note that the font always uses the minimum allowed width, but the height of 
+the font is the value given for the fontsize. To get a wider code, just use
+the font for a given size with a higher size. Eg. a 12pt font at size 24.
+
+svg2ttf might be used to convert the SVG font to a truetype font.
+
+To produce the characters to print for a any given data, use
+
+ ./code128 <data>
+
+
